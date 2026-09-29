@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
@@ -16,7 +17,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/aarol/reload"
+	"github.com/alecthomas/chroma/v2"
 	chroma_html "github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/chrishrb/go-grip/defaults"
 )
@@ -43,9 +46,11 @@ func NewServer(host string, port int, boundingBox bool, browser bool, enableRelo
 	}
 }
 
-func (s *Server) Serve(file string) error {
-	directory := path.Dir(file)
-	filename := path.Base(file)
+func (s *Server) Serve(file string, root string) error {
+	// The reload watcher stays scoped to the file's directory to avoid
+	// watching the whole repository tree.
+	directory := filepath.Dir(file)
+	servingDirectory, relativePath := servingPaths(file, root)
 
 	var reloadMiddleware *reload.Reloader
 	if s.enableReload {
@@ -57,7 +62,7 @@ func (s *Server) Serve(file string) error {
 		}
 	}
 
-	dir := http.Dir(directory)
+	dir := http.Dir(servingDirectory)
 	handler := s.newHandler(dir)
 
 	addr := fmt.Sprintf("http://%s:%d/", s.host, s.port)
@@ -73,7 +78,7 @@ func (s *Server) Serve(file string) error {
 			addr, _ = url.JoinPath(addr, readme)
 		}
 	} else {
-		addr, _ = url.JoinPath(addr, filename)
+		addr, _ = url.JoinPath(addr, relativePath)
 	}
 
 	fmt.Printf("🚀 Starting server: %s\n", addr)
@@ -91,7 +96,39 @@ func (s *Server) Serve(file string) error {
 	} else {
 		fmt.Printf("🔄 Auto-reload disabled. Use F5 to manually refresh.\n")
 	}
-	return http.ListenAndServe(fmt.Sprintf(":%d", s.port), handler)
+	return http.ListenAndServe(fmt.Sprintf("%s:%d", s.host, s.port), handler)
+}
+
+// servingPaths returns the directory to serve and the initial page path. The
+// URL namespace is anchored at root when given (the Emacs preview passes the
+// projectile project root) so relative links across subdirectories resolve
+// instead of clamping at "/" and 404ing; without root it is the file's own
+// directory.
+func servingPaths(file string, root string) (string, string) {
+	directory := filepath.Dir(file)
+	filename := filepath.Base(file)
+	if file == "" {
+		return directory, filename
+	}
+
+	absolutePath, err := filepath.Abs(file)
+	if err != nil {
+		return directory, filename
+	}
+
+	anchor := directory
+	if root != "" {
+		if absoluteRoot, rootErr := filepath.Abs(root); rootErr == nil {
+			anchor = absoluteRoot
+		}
+	}
+
+	relative, relErr := filepath.Rel(anchor, absolutePath)
+	outsideAnchor := relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator))
+	if relErr != nil || outsideAnchor {
+		return directory, filename
+	}
+	return anchor, filepath.ToSlash(relative)
 }
 
 func (s *Server) newHandler(dir http.Dir) http.Handler {
@@ -132,6 +169,13 @@ func (s *Server) newHandler(dir http.Dir) http.Handler {
 			}
 		}
 
+		if lexers.Match(path.Base(r.URL.Path)) != nil {
+			isFile, err := isRegularFile(dir, r.URL.Path)
+			if err == nil && isFile && s.renderSourceFile(w, dir, r.URL.Path) {
+				return
+			}
+		}
+
 		isDirectory, err := isDirectory(dir, r.URL.Path)
 		if err == nil && isDirectory {
 			setNoCacheHeaders(w)
@@ -142,6 +186,47 @@ func (s *Server) newHandler(dir http.Dir) http.Handler {
 	})
 
 	return mux
+}
+
+// renderSourceFile writes requestPath as a syntax-highlighted HTML page when
+// the file name maps to a chroma lexer, and reports whether it did. Source
+// files would otherwise be served as plain text by the file server.
+func (s *Server) renderSourceFile(w http.ResponseWriter, dir http.Dir, requestPath string) bool {
+	filename := path.Base(requestPath)
+	lexer := lexers.Match(filename)
+	if lexer == nil || lexer.Config().Name == "plaintext" {
+		return false
+	}
+
+	sourceBytes, err := readToString(dir, requestPath)
+	if err != nil {
+		return false
+	}
+
+	iterator, err := chroma.Coalesce(lexer).Tokenise(nil, string(sourceBytes))
+	if err != nil {
+		return false
+	}
+
+	formatter := chroma_html.New(
+		chroma_html.WithClasses(true),
+		chroma_html.WithLineNumbers(true),
+		chroma_html.LineNumbersInTable(true),
+	)
+	var highlighted bytes.Buffer
+	if err := formatter.Format(&highlighted, styles.Get("github"), iterator); err != nil {
+		return false
+	}
+
+	setNoCacheHeaders(w)
+	err = serveTemplate(w, htmlStruct{
+		Content:      highlighted.String(),
+		BoundingBox:  s.boundingBox,
+		CssCodeLight: getCssCode("github"),
+		CssCodeDark:  getCssCode("github-dark"),
+		Title:        html.EscapeString(filename),
+	})
+	return err == nil
 }
 
 func readToString(dir http.Dir, filename string) ([]byte, error) {

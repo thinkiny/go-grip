@@ -105,6 +105,12 @@ You can also specify a port:
 go-grip -p 80 README.md
 ```
 
+To serve links relative to a project directory while opening a file in one of its subdirectories, set the URL namespace root explicitly:
+
+```bash
+go-grip --root /path/to/project /path/to/project/docs/guide.md
+```
+
 or just open a file-tree with all available files in the current directory:
 
 ```bash
