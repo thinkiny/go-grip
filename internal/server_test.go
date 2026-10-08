@@ -60,6 +60,72 @@ func TestRegularFileStillSupportsConditionalRequests(t *testing.T) {
 	}
 }
 
+func TestMarkdownPreviewLayout(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("# Hello\n"), 0o644); err != nil {
+		t.Fatalf("write README.md: %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		boundingBox  bool
+		contentClass string
+		wantInnerBox bool
+	}{
+		{name: "without bounding box", contentClass: `class="markdown-content"`},
+		{name: "with bounding box", boundingBox: true, contentClass: `class="markdown-content container-inner"`, wantInnerBox: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := NewServer("localhost", 6419, tt.boundingBox, false, false, NewParser())
+			recorder := httptest.NewRecorder()
+			server.newHandler(http.Dir(tmpDir)).ServeHTTP(
+				recorder,
+				httptest.NewRequest(http.MethodGet, "/README.md", nil),
+			)
+
+			if recorder.Code != http.StatusOK {
+				t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+			}
+			body := recorder.Body.String()
+			previewIndex := strings.Index(body, `href="/static/css/markdown-preview.css"`)
+			if previewIndex == -1 {
+				t.Fatalf("expected shared preview stylesheet, got %q", body)
+			}
+			mermaidIndex := strings.Index(body, `href="/static/css/github-mermaid.css"`)
+			printIndex := strings.Index(body, `href="/static/css/github-print.css"`)
+			if mermaidIndex == -1 || printIndex == -1 {
+				t.Fatalf("expected Mermaid and print stylesheets, got %q", body)
+			}
+			if printIndex < previewIndex || printIndex < mermaidIndex {
+				t.Fatalf("expected print stylesheet after screen stylesheets, got %q", body)
+			}
+			if !strings.Contains(body, tt.contentClass) {
+				t.Fatalf("expected content wrapper %q, got %q", tt.contentClass, body)
+			}
+			if !tt.wantInnerBox && strings.Contains(body, "container-inner") {
+				t.Fatalf("expected unboxed content wrapper, got %q", body)
+			}
+		})
+	}
+
+	t.Run("shared stylesheet asset", func(t *testing.T) {
+		server := NewServer("localhost", 6419, false, false, false, NewParser())
+		recorder := httptest.NewRecorder()
+		server.newHandler(http.Dir(tmpDir)).ServeHTTP(
+			recorder,
+			httptest.NewRequest(http.MethodGet, "/static/css/markdown-preview.css", nil),
+		)
+
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("expected preview stylesheet status %d, got %d", http.StatusOK, recorder.Code)
+		}
+	})
+}
+
 func TestMarkdownResponsesDisableCaching(t *testing.T) {
 	t.Parallel()
 

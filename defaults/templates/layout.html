@@ -19,11 +19,12 @@
     />
     <style id="highlight-light" media="(prefers-color-scheme: light)">{{ .CssCodeLight }}</style>
     <style id="highlight-dark" media="(prefers-color-scheme: dark)">{{ .CssCodeDark }}</style>
-    <link rel="stylesheet" href="/static/css/github-print.css" media="print" />
+    <link rel="stylesheet" href="/static/css/markdown-preview.css" />
     <link rel="stylesheet" href="/static/css/github-mermaid.css" />
     <link rel="stylesheet" href="/static/css/github-clipboard.css" />
     <link rel="stylesheet" href="/static/css/mathjax.css" />
     <link rel="stylesheet" href="/static/css/theme-switch.css" />
+    <link rel="stylesheet" href="/static/css/github-print.css" media="print" />
     <script src="/static/js/theme-switch.js"></script>
     <script src="/static/js/clipboard-copy.js"></script>
     <script src="/static/js/mathjax-options.js"></script>
@@ -37,7 +38,7 @@
       <span class="theme-toggle-icon"></span>
     </button>
     <div class="container">
-      <div {{if .BoundingBox }} class="container-inner" {{end}}>
+      <div class="markdown-content{{if .BoundingBox }} container-inner{{end}}">
         {{ .Content }}
       </div>
     </div>

@@ -1,0 +1,90 @@
+.markdown-body {
+  --preview-text-font: "Tabular", Georgia, Cambria, "Times New Roman",
+    "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC",
+    "Microsoft YaHei", serif;
+  --preview-code-font: "JetBrains Mono", ui-monospace, SFMono-Regular,
+    "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--preview-text-font);
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body pre,
+.markdown-body samp,
+.markdown-body tt {
+  font-family: var(--preview-code-font);
+}
+
+.container {
+  width: 95%;
+  max-width: none;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (min-width: 940px) {
+  .container-inner {
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 6px;
+    margin-top: 20px;
+    margin-bottom: 6px;
+  }
+}
+
+.footer {
+  padding-top: 10px;
+  padding-bottom: 20px;
+  text-align: center;
+}
+
+.container,
+.markdown-content {
+  min-width: 0;
+}
+
+.markdown-content {
+  box-sizing: border-box;
+  width: 100%;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+.markdown-content > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.markdown-body table:not(.lntable) {
+  width: 100%;
+  table-layout: auto;
+}
+
+.markdown-body table:not(.lntable):not(.csv-data) th,
+.markdown-body table:not(.lntable):not(.csv-data) td {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.markdown-body .highlight pre,
+.markdown-body pre {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.markdown-content > :first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-content > :last-child {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 939px) {
+  .markdown-content {
+    padding-top: 4rem;
+  }
+}

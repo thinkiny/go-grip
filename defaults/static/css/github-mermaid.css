@@ -1,83 +1,97 @@
-/* Mermaid error and utility styles */
-.mermaid-error {
-  background: #fff0f0;
-  color: #cf222e;
-  border: 1px solid #cf222e;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin: 8px 0;
-  white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: 12px;
+.markdown-body pre.mermaid {
+  position: relative;
+  width: 100%;
+  padding: 0;
+  overflow: visible;
+  font-family: var(--preview-text-font);
+  font-size: 1rem;
+  line-height: inherit;
+  white-space: normal;
+  background: transparent;
 }
 
-[data-theme="dark"] .mermaid-error {
-  background: #2a1616;
+.markdown-body pre.mermaid.mermaid-error {
+  padding: 8px 12px;
+  margin: 8px 0;
+  color: #cf222e;
+  background: #fff0f0;
+  border: 1px solid #cf222e;
+  border-radius: 6px;
+  font-family: var(--preview-code-font);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+[data-theme="dark"] .markdown-body pre.mermaid.mermaid-error {
   color: #ff7b72;
+  background: #2a1616;
   border-color: #da3633;
 }
 
 .mermaid {
-  background: transparent !important;
   opacity: 0;
-  transition: opacity 0.15s ease-in;
 }
 
 .mermaid.rendered {
+  opacity: 1;
+  transition: opacity 0.15s ease-in;
+}
+
+.mermaid.mermaid-error {
   opacity: 1;
 }
 
 /* Control panel for Mermaid viewer */
 .mermaid-viewport {
-  overflow: hidden;
-  height: 100%;
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
-.markdown-body pre {
-  position: relative;
-}
-
-.mermaid-viewport svg { 
-  padding-bottom: 120px;
+.mermaid-viewport svg {
+  display: block;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0;
 }
 
 .mermaid-viewer-control-panel {
-  position: absolute;
-  bottom: 1em;
-  right: 1em;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: .2em;
-  z-index: 10;
-}
-
-.mermaid-viewer-control-panel>button {
-  padding: 5px 7px;
+  grid-template-columns: repeat(3, 2rem);
+  gap: 0.25rem;
+  justify-content: end;
+  width: fit-content;
+  margin: 0 0 0.75rem auto;
 }
 
 .mermaid-toolbar-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
   color: #35292e;
   background-color: #f6f8fa;
-  transition: 80ms cubic-bezier(0.33, 1, 0.68, 1);
-  transition-property: color, background-color, box-shadow, border-color;
-  position: relative;
-  display: inline-block;
+  border: 1px solid #d1d9e0;
+  border-radius: 6px;
   font-size: 14px;
   font-weight: var(--base-text-weight-medium, 500);
   line-height: 20px;
-  white-space: nowrap;
-  vertical-align: middle;
   cursor: pointer;
   user-select: none;
-  border: 1px solid #d1d9e0;
-  border-radius: 6px;
   appearance: none;
+  transition: 80ms cubic-bezier(0.33, 1, 0.68, 1);
+  transition-property: color, background-color, box-shadow, border-color;
 }
 
 [data-theme="dark"] .mermaid-toolbar-btn {
   color: #f0f6fc;
   background-color: #212830;
-  border: 1px solid rgb(61, 68, 77);
+  border-color: #3d444d;
 }
 
 .mermaid-toolbar-btn:hover {
@@ -85,7 +99,7 @@
 }
 
 [data-theme="dark"] .mermaid-toolbar-btn:hover {
-  background-color: #212830;
+  background-color: #262c36;
 }
 
 .mermaid-toolbar-btn:active {
@@ -93,40 +107,49 @@
 }
 
 [data-theme="dark"] .mermaid-toolbar-btn:active {
-  background-color: #212830;
+  background-color: #2d333b;
 }
 
-.mermaid-viewer-control-panel>.zoom-in {
+.mermaid-toolbar-btn:focus-visible {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] .mermaid-toolbar-btn:focus-visible {
+  outline-color: #4493f8;
+}
+
+.mermaid-viewer-control-panel > .zoom-in {
   grid-column: 3;
   grid-row: 1;
 }
 
-.mermaid-viewer-control-panel>.zoom-out {
+.mermaid-viewer-control-panel > .zoom-out {
   grid-column: 3;
   grid-row: 3;
 }
 
-.mermaid-viewer-control-panel>.reset {
+.mermaid-viewer-control-panel > .reset {
   grid-column: 2;
   grid-row: 2;
 }
 
-.mermaid-viewer-control-panel>.up {
+.mermaid-viewer-control-panel > .up {
   grid-column: 2;
   grid-row: 1;
 }
 
-.mermaid-viewer-control-panel>.down {
+.mermaid-viewer-control-panel > .down {
   grid-column: 2;
   grid-row: 3;
 }
 
-.mermaid-viewer-control-panel>.left {
+.mermaid-viewer-control-panel > .left {
   grid-column: 1;
   grid-row: 2;
 }
 
-.mermaid-viewer-control-panel>.right {
+.mermaid-viewer-control-panel > .right {
   grid-column: 3;
   grid-row: 2;
 }

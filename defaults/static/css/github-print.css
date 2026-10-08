@@ -70,8 +70,13 @@
 
   /* ========== CONTAINER & LAYOUT OPTIMIZATION ========== */
   .container {
+    width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .markdown-content {
     padding: 0 !important;
   }
 
@@ -353,6 +358,21 @@
     border: 1pt solid #ddd !important;
     padding: 8pt !important;
     margin: 8pt 0 !important;
+  }
+
+  .mermaid-viewer-control-panel {
+    display: none !important;
+  }
+
+  .mermaid-viewport {
+    overflow: visible !important;
+  }
+
+  .mermaid-viewport svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    transform: none !important;
   }
 
   /* ========== UTILITY CLASSES ========== */

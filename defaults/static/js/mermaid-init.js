@@ -1,16 +1,18 @@
 (function(){
   var lightThemeVariables = {
-    primaryColor: '#ECECFF',
-    primaryTextColor: 'black',
-    primaryBorderColor: 'hsl(259.6261682243, 59.7765363128%, 87.9019607843%)',
-    lineColor: 'hsl(259.6261682243, 59.7765363128%, 87.9019607843%)'
+    primaryColor: '#f6f8fa',
+    primaryTextColor: '#1f2328',
+    primaryBorderColor: '#d1d9e0',
+    lineColor: '#656d76',
+    fontSize: '15px'
   };
 
   var darkThemeVariables = {
-    primaryColor: '#1f2020',
-    primaryTextColor: 'lightgrey',
-    primaryBorderColor: '#ccc',
-    lineColor: '#ccc'
+    primaryColor: '#212830',
+    primaryTextColor: '#f0f6fc',
+    primaryBorderColor: '#3d444d',
+    lineColor: '#9198a1',
+    fontSize: '15px'
   };
 
   // SVG icons
@@ -29,8 +31,11 @@
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
-  function escapeHTML(str) {
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  function getThemeVariables() {
+    var bodyStyle = window.getComputedStyle(document.body);
+    return Object.assign({}, isDark() ? darkThemeVariables : lightThemeVariables, {
+      fontFamily: bodyStyle.fontFamily
+    });
   }
 
   function getCode(node) {
@@ -42,6 +47,7 @@
     b.className = `mermaid-toolbar-btn ${className}`;
     b.innerHTML = html;
     b.title = title;
+    b.setAttribute('aria-label', title);
     b.type = 'button';
     b.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); fn(); });
     return b;
@@ -89,9 +95,6 @@
     var svg = node.querySelector('svg');
     if (!svg) return;
 
-    // Use code for copy button
-    // var code = node.dataset.code || '';
-
     var viewport = document.createElement('div');
     viewport.className = 'mermaid-viewport';
 
@@ -100,6 +103,8 @@
 
     var toolbar = document.createElement('div');
     toolbar.className = 'mermaid-viewer-control-panel';
+    toolbar.setAttribute('role', 'toolbar');
+    toolbar.setAttribute('aria-label', 'Diagram controls');
 
     var zoomBtns = attachZoomPan(viewport, svg);
     for (var i = 0; i < zoomBtns.length; i++) toolbar.appendChild(zoomBtns[i]);
@@ -111,11 +116,17 @@
   async function renderAll() {
     if (!window.mermaid) return;
 
-    var themeVars = isDark() ? darkThemeVariables : lightThemeVariables;
+    var themeVars = getThemeVariables();
     mermaid.initialize({
       startOnLoad: false,
       theme: 'base',
       themeVariables: themeVars,
+      flowchart: {
+        wrappingWidth: 210,
+        padding: 6,
+        rankSpacing: 16,
+        nodeSpacing: 24
+      },
       securityLevel: 'loose',
       logLevel: 'error'
     });
@@ -137,8 +148,9 @@
         node.classList.add('rendered');
       } catch(err) {
         console.error('Mermaid render error:', err);
+        node.classList.remove('rendered');
         node.classList.add('mermaid-error');
-        node.innerHTML = '<pre class="mermaid-error">Mermaid error:\n' + escapeHTML(err.message || String(err)) + '</pre>';
+        node.textContent = 'Mermaid error:\n' + (err.message || String(err));
       }
     }
   }
