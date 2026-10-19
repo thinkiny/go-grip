@@ -19,7 +19,7 @@ func TestDirectoryListingIgnoresCacheValidators(t *testing.T) {
 	}
 
 	server := NewServer("localhost", 6419, false, false, false, NewParser())
-	handler := server.newHandler(http.Dir(tmpDir))
+	handler := server.newHandler(http.Dir(tmpDir), nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("If-Modified-Since", time.Now().Add(24*time.Hour).UTC().Format(http.TimeFormat))
@@ -47,7 +47,7 @@ func TestRegularFileStillSupportsConditionalRequests(t *testing.T) {
 	}
 
 	server := NewServer("localhost", 6419, false, false, false, NewParser())
-	handler := server.newHandler(http.Dir(tmpDir))
+	handler := server.newHandler(http.Dir(tmpDir), nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/plain.txt", nil)
 	req.Header.Set("If-Modified-Since", time.Now().Add(24*time.Hour).UTC().Format(http.TimeFormat))
@@ -82,7 +82,7 @@ func TestMarkdownPreviewLayout(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := NewServer("localhost", 6419, tt.boundingBox, false, false, NewParser())
 			recorder := httptest.NewRecorder()
-			server.newHandler(http.Dir(tmpDir)).ServeHTTP(
+			server.newHandler(http.Dir(tmpDir), nil).ServeHTTP(
 				recorder,
 				httptest.NewRequest(http.MethodGet, "/README.md", nil),
 			)
@@ -115,7 +115,7 @@ func TestMarkdownPreviewLayout(t *testing.T) {
 	t.Run("shared stylesheet asset", func(t *testing.T) {
 		server := NewServer("localhost", 6419, false, false, false, NewParser())
 		recorder := httptest.NewRecorder()
-		server.newHandler(http.Dir(tmpDir)).ServeHTTP(
+		server.newHandler(http.Dir(tmpDir), nil).ServeHTTP(
 			recorder,
 			httptest.NewRequest(http.MethodGet, "/static/css/markdown-preview.css", nil),
 		)
@@ -135,7 +135,7 @@ func TestMarkdownResponsesDisableCaching(t *testing.T) {
 	}
 
 	server := NewServer("localhost", 6419, false, false, false, NewParser())
-	handler := server.newHandler(http.Dir(tmpDir))
+	handler := server.newHandler(http.Dir(tmpDir), nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/README.md", nil)
 	req.Header.Set("If-Modified-Since", time.Now().Add(24*time.Hour).UTC().Format(http.TimeFormat))
@@ -199,7 +199,7 @@ func TestFilenameTitleResponses(t *testing.T) {
 	}
 
 	server := NewServer("localhost", 6419, false, false, false, NewParser())
-	handler := server.newHandler(http.Dir(tmpDir))
+	handler := server.newHandler(http.Dir(tmpDir), nil)
 
 	tests := []struct {
 		name string
@@ -236,7 +236,7 @@ func TestSourceFileRenderedWithHighlighting(t *testing.T) {
 	}
 
 	server := NewServer("localhost", 6419, false, false, false, NewParser())
-	handler := server.newHandler(http.Dir(tmpDir))
+	handler := server.newHandler(http.Dir(tmpDir), nil)
 
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/main.go", nil))
@@ -326,7 +326,7 @@ func TestPlainTextFilesStayWithFileServer(t *testing.T) {
 	}
 
 	server := NewServer("localhost", 6419, false, false, false, NewParser())
-	handler := server.newHandler(http.Dir(tmpDir))
+	handler := server.newHandler(http.Dir(tmpDir), nil)
 
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/notes.txt", nil))

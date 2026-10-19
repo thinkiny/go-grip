@@ -1,7 +1,7 @@
 /* GitHub Clipboard Button - Exact Match */
 
 /* Button base styling */
-clipboard-copy {
+button[data-clipboard-copy] {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -18,35 +18,35 @@ clipboard-copy {
   transition: background-color 0.2s;
 }
 
-[data-theme="dark"] clipboard-copy {
+[data-theme="dark"] button[data-clipboard-copy] {
   color: #f0f6fc;
 }
 
 /* Hover state */
-clipboard-copy:hover {
+button[data-clipboard-copy]:hover {
   background-color: #eff2f5;
 }
 
-[data-theme="dark"] clipboard-copy:hover {
+[data-theme="dark"] button[data-clipboard-copy]:hover {
   background-color: #212830;
 }
 
 /* Active state */
-clipboard-copy:active {
+button[data-clipboard-copy]:active {
   background-color: #e6eaef;
 }
 
-[data-theme="dark"] clipboard-copy:active {
+[data-theme="dark"] button[data-clipboard-copy]:active {
   background-color: #212830;
 }
 
 /* Focus state */
-clipboard-copy:focus {
+button[data-clipboard-copy]:focus {
   outline: 2px solid #0969da;
   outline-offset: -2px;
 }
 
-clipboard-copy:focus:not(:focus-visible) {
+button[data-clipboard-copy]:focus:not(:focus-visible) {
   outline: none;
 }
 
@@ -185,7 +185,7 @@ clipboard-copy:focus:not(:focus-visible) {
 
 /* Print */
 @media print {
-  clipboard-copy,
+  button[data-clipboard-copy],
   .zeroclipboard-container {
     display: none !important;
   }

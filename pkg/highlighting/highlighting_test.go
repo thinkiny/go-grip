@@ -42,6 +42,24 @@ Title
 	}
 }
 
+func TestHighlightingRendersNativeClipboardButton(t *testing.T) {
+	markdown := goldmark.New(
+		goldmark.WithExtensions(NewHighlighting()),
+	)
+	var buffer bytes.Buffer
+	if err := markdown.Convert([]byte("```text\nalpha <beta> & \\\"gamma\\\"\n```"), &buffer); err != nil {
+		t.Fatal(err)
+	}
+
+	output := buffer.String()
+	if !strings.Contains(output, `<button type="button"`) || !strings.Contains(output, "data-clipboard-copy") {
+		t.Fatal("failed to render native clipboard button")
+	}
+	if strings.Contains(output, "<clipboard-copy") || strings.Contains(output, ` value="alpha`) {
+		t.Fatal("clipboard button embedded source code in a custom element attribute")
+	}
+}
+
 func TestHighlightingWithoutLanguage(t *testing.T) {
 	markdown := goldmark.New(
 		goldmark.WithExtensions(

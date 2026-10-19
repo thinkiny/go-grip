@@ -45,5 +45,8 @@
     {{if .BoundingBox}}
     <footer class="container footer">Made with &hearts; by chrishrb</footer>
     {{end}}
+    {{if .ReloadVersion}}
+    <script src="/static/js/reload.js" data-version="{{ .ReloadVersion }}"></script>
+    {{end}}
   </body>
 </html>

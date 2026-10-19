@@ -121,7 +121,7 @@ If a `README.md` exists in that directory it is opened directly, otherwise the f
 
 Dark mode is not a launch option: use the toggle in the top right corner of the page. Your choice is stored in the browser's local storage, so each browser remembers its own theme. Without a stored choice the page follows the operating system's `prefers-color-scheme` setting.
 
-To disable automatic browser reload on file changes (useful for stable editing):
+Automatic reload tracks the file displayed in each preview. Changes to unrelated files in the served project do not refresh the page. To disable automatic browser reload entirely (useful for stable editing):
 
 ```bash
 go-grip --no-reload README.md

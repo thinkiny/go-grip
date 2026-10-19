@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"html"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -16,7 +15,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/aarol/reload"
 	"github.com/alecthomas/chroma/v2"
 	chroma_html "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
@@ -47,23 +45,18 @@ func NewServer(host string, port int, boundingBox bool, browser bool, enableRelo
 }
 
 func (s *Server) Serve(file string, root string) error {
-	// The reload watcher stays scoped to the file's directory to avoid
-	// watching the whole repository tree.
-	directory := filepath.Dir(file)
 	servingDirectory, relativePath := servingPaths(file, root)
-
-	var reloadMiddleware *reload.Reloader
-	if s.enableReload {
-		reloadMiddleware = reload.New(directory)
-		reloadMiddleware.DebugLog = log.New(io.Discard, "", 0)
-		// Fix WebSocket CORS issues for development
-		reloadMiddleware.Upgrader.CheckOrigin = func(r *http.Request) bool {
-			return true
-		}
-	}
-
 	dir := http.Dir(servingDirectory)
-	handler := s.newHandler(dir)
+
+	var reloader http.Handler
+	if s.enableReload {
+		reloadHandler, err := newReloadHandler(servingDirectory)
+		if err != nil {
+			return err
+		}
+		reloader = reloadHandler
+	}
+	handler := s.newHandler(dir, reloader)
 
 	addr := fmt.Sprintf("http://%s:%d/", s.host, s.port)
 	if file == "" {
@@ -91,8 +84,7 @@ func (s *Server) Serve(file string, root string) error {
 	}
 
 	if s.enableReload {
-		handler = reloadMiddleware.Handle(handler)
-		fmt.Printf("📡 Auto-reload enabled. Files will trigger browser refresh.\n")
+		fmt.Printf("📡 Auto-reload enabled. Changes to the current page will trigger browser refresh.\n")
 	} else {
 		fmt.Printf("🔄 Auto-reload disabled. Use F5 to manually refresh.\n")
 	}
@@ -131,10 +123,13 @@ func servingPaths(file string, root string) (string, string) {
 	return anchor, filepath.ToSlash(relative)
 }
 
-func (s *Server) newHandler(dir http.Dir) http.Handler {
+func (s *Server) newHandler(dir http.Dir, reloader http.Handler) http.Handler {
 	fileServer := http.FileServer(dir)
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.FileServer(http.FS(defaults.StaticFiles)))
+	if reloader != nil {
+		mux.Handle(reloadEndpoint, reloader)
+	}
 
 	regex := regexp.MustCompile(`(?i)\.md$`)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -155,11 +150,12 @@ func (s *Server) newHandler(dir http.Dir) http.Handler {
 				}
 
 				err = serveTemplate(w, htmlStruct{
-					Content:      string(htmlContent),
-					BoundingBox:  s.boundingBox,
-					CssCodeLight: getCssCode("github"),
-					CssCodeDark:  getCssCode("github-dark"),
-					Title:        html.EscapeString(s.pageTitle(r.URL.Path)),
+					Content:       string(htmlContent),
+					BoundingBox:   s.boundingBox,
+					CssCodeLight:  getCssCode("github"),
+					CssCodeDark:   getCssCode("github-dark"),
+					Title:         html.EscapeString(s.pageTitle(r.URL.Path)),
+					ReloadVersion: pageReloadVersion(bytes, reloader != nil),
 				})
 				if err != nil {
 					log.Fatal(err)
@@ -171,7 +167,7 @@ func (s *Server) newHandler(dir http.Dir) http.Handler {
 
 		if lexers.Match(path.Base(r.URL.Path)) != nil {
 			isFile, err := isRegularFile(dir, r.URL.Path)
-			if err == nil && isFile && s.renderSourceFile(w, dir, r.URL.Path) {
+			if err == nil && isFile && s.renderSourceFile(w, dir, r.URL.Path, reloader != nil) {
 				return
 			}
 		}
@@ -191,7 +187,7 @@ func (s *Server) newHandler(dir http.Dir) http.Handler {
 // renderSourceFile writes requestPath as a syntax-highlighted HTML page when
 // the file name maps to a chroma lexer, and reports whether it did. Source
 // files would otherwise be served as plain text by the file server.
-func (s *Server) renderSourceFile(w http.ResponseWriter, dir http.Dir, requestPath string) bool {
+func (s *Server) renderSourceFile(w http.ResponseWriter, dir http.Dir, requestPath string, reloadEnabled bool) bool {
 	filename := path.Base(requestPath)
 	lexer := lexers.Match(filename)
 	if lexer == nil || lexer.Config().Name == "plaintext" {
@@ -220,13 +216,21 @@ func (s *Server) renderSourceFile(w http.ResponseWriter, dir http.Dir, requestPa
 
 	setNoCacheHeaders(w)
 	err = serveTemplate(w, htmlStruct{
-		Content:      highlighted.String(),
-		BoundingBox:  s.boundingBox,
-		CssCodeLight: getCssCode("github"),
-		CssCodeDark:  getCssCode("github-dark"),
-		Title:        html.EscapeString(filename),
+		Content:       highlighted.String(),
+		BoundingBox:   s.boundingBox,
+		CssCodeLight:  getCssCode("github"),
+		CssCodeDark:   getCssCode("github-dark"),
+		Title:         html.EscapeString(filename),
+		ReloadVersion: pageReloadVersion(sourceBytes, reloadEnabled),
 	})
 	return err == nil
+}
+
+func pageReloadVersion(contents []byte, enabled bool) string {
+	if !enabled {
+		return ""
+	}
+	return contentVersion(contents)
 }
 
 func readToString(dir http.Dir, filename string) ([]byte, error) {
@@ -246,11 +250,12 @@ func readToString(dir http.Dir, filename string) ([]byte, error) {
 }
 
 type htmlStruct struct {
-	Content      string
-	BoundingBox  bool
-	CssCodeLight string
-	CssCodeDark  string
-	Title        string
+	Content       string
+	BoundingBox   bool
+	CssCodeLight  string
+	CssCodeDark   string
+	Title         string
+	ReloadVersion string
 }
 
 func (s *Server) pageTitle(filename string) string {
