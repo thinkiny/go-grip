@@ -62,10 +62,13 @@
   table-layout: auto;
 }
 
-.markdown-body table:not(.lntable):not(.csv-data) th,
+.markdown-body table:not(.lntable):not(.csv-data) th {
+  white-space: nowrap;
+}
+
 .markdown-body table:not(.lntable):not(.csv-data) td {
   white-space: normal;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   word-break: normal;
 }
 
